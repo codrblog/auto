@@ -71,9 +71,9 @@ export async function runCommands(commands: string[]) {
       .split('\n')
       .filter((s) => !s.startsWith('#'))
       .join('\n');
-    const sh = await execString(line);
 
-    outputs.push({ cmd, output: sh });
+    const sh = await execString(line);
+    outputs.push({ cmd: line, output: sh });
 
     if (!sh.ok) {
       ok = false;
