@@ -2,23 +2,12 @@ import { IncomingMessage, createServer, ServerResponse } from 'http';
 import { createSession, updatePrimer, findCodeBlocks, getResponse, runCommands } from './utils.js';
 import logger from './file-logger.js';
 
-// import { createReadStream, readdirSync } from 'fs';
-// import { join } from 'path';
-
-// const CWD = process.cwd();
-// const assets = readdirSync(join(CWD, 'assets'));
-
 export async function onRequest(request: IncomingMessage, response: ServerResponse) {
   if (request.url === '/favicon.ico') {
     response.writeHead(404);
     response.end();
     return;
   }
-
-  // if (assets.includes(request.url.slice(1))) {
-  //   createReadStream(join(CWD, 'assets', request.url.slice(1))).pipe(response);
-  //   return;
-  // }
 
   if (request.method !== 'POST') {
     console.log('Invalid request', request.method, request.url);
