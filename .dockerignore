@@ -1,0 +1,8 @@
+src/
+mocks/
+dist/
+coverage/
+jest*
+rollup*
+tsconfig*
+README.md

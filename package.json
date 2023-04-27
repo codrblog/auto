@@ -5,7 +5,7 @@
   "prettier": "@cloud-cli/prettier-config",
   "type": "module",
   "scripts": {
-    "start": "node index.mjs",
+    "start": "node index.js",
     "build": "npm run rollup",
     "rollup": "rollup -c",
     "tdd": "jest --watchAll",
