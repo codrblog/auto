@@ -1,4 +1,4 @@
-import { IncomingMessage, createServer } from 'http';
+import { IncomingMessage, createServer, ServerResponse } from 'http';
 import { createSession, findCodeBlocks, getResponse, runCommands } from './utils.js';
 import logger from './file-logger.js';
 
@@ -8,7 +8,7 @@ import logger from './file-logger.js';
 // const CWD = process.cwd();
 // const assets = readdirSync(join(CWD, 'assets'));
 
-export async function onRequest(request, response) {
+export async function onRequest(request: IncomingMessage, response: ServerResponse) {
   if (request.url === '/favicon.ico') {
     response.writeHead(404);
     response.end();
@@ -20,18 +20,27 @@ export async function onRequest(request, response) {
   //   return;
   // }
 
-  if (request.method !== 'POST') {
+  if (request.method !== 'POST' || request.url !== '/task') {
+    console.log('Invalid request', request.method, request.url);
     response.writeHead(404);
     response.end();
   }
 
   const body = await readBody(request);
+  let waiting = true;
+
+  request.on('close', () => (waiting = false));
 
   try {
     const session = createSession(body);
-    logger.log('INPUT: ' + body);
+    logger.log('START: ' + body);
 
     while (1) {
+      if (!waiting) {
+        logger.log('CANCELLED');
+        break;
+      }
+
       const completion = await getResponse(session.messages);
       session.messages.push({
         role: 'assistant',
@@ -39,8 +48,8 @@ export async function onRequest(request, response) {
       });
 
       const commands = findCodeBlocks(completion);
-      logger.log('NEXT %s', completion);
-      logger.log('COMMANDS:', JSON.stringify(commands, null, 2));
+      logger.log('NEXT: ' + completion);
+      logger.log('COMMANDS:\n' + commands.join('\n'));
 
       if (!commands) {
         logger.log('HALT');
@@ -53,9 +62,9 @@ export async function onRequest(request, response) {
         session.messages.push({
           role: 'user',
           content:
-            'These are the results:\n```' +
+            'These are the results:\n' +
             run.outputs.map((o) => ['#' + o.cmd, o.output.stdout].join('\n')).join('\n\n') +
-            '```\nAnything else to execute?',
+            '\n\nAnything else to execute?',
         });
       }
 
@@ -64,16 +73,19 @@ export async function onRequest(request, response) {
         const error = String(lastCmd.output.error || lastCmd.output.stderr);
         session.messages.push({
           role: 'user',
-          content: `The command \`${lastCmd.cmd}\` failed with this error: ${error}. Fix it and give me the next command block.`,
+          content: `The command:\n\`${lastCmd.cmd}\`\n has failed with this error:\n${error}\nFix the command and give me in the next instruction.`,
         });
       }
     }
 
-    response.end(JSON.stringify(session.messages.slice(3)));
+    const sessionJson = JSON.stringify(session.messages.slice(3));
+    logger.log('END: ' + sessionJson);
+    response.end(sessionJson);
   } catch (error) {
     response.writeHead(500);
     response.end(String(error));
-    logger.log('ERROR', error);
+    logger.log('ERROR: ' + String(error));
+    console.log(error);
   }
 }
 
