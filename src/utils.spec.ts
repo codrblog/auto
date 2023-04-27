@@ -82,7 +82,7 @@ describe('runCommands', () => {
       ok: false,
       outputs: [
         {
-          cmd: commands[0],
+          cmd: 'pwd',
           output: {
             code: 0,
             ok: true,
@@ -92,7 +92,7 @@ describe('runCommands', () => {
           },
         },
         {
-          cmd: commands[1],
+          cmd: 'invalid-command-1',
           output: {
             code: expect.any(Number),
             ok: false,
