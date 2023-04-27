@@ -10,6 +10,7 @@ function write(type: string, line: string) {
     .join('\n');
 
   file.write(str + '\n');
+  process.stdout.write(str + '\n');
 }
 
 process.on('exit', () => file.close());
