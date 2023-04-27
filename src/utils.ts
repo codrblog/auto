@@ -62,20 +62,30 @@ function getOpenAiConnector() {
   return (messages: any) => openai.createChatCompletion({ model, messages });
 }
 
+const escapeSlash = /\\$/g
+function sanitizeCommand(cmd) {
+  return cmd
+      .split('\n')
+      .filter((s) => !s.startsWith('#'))
+      .map(s => s.replace(escapeSlash, '').trim())
+      .join(' ');
+}
+
 export async function runCommands(commands: string[]) {
   const outputs: Array<{ cmd: string; output: ExecOutput }> = [];
   let ok = true;
 
   for (const cmd of commands) {
-    const line = cmd
-      .split('\n')
-      .filter((s) => !s.startsWith('#'))
-      .join('\n');
+    const line = sanitizeCommand(cmd);
 
     const sh = await execString(line);
     outputs.push({ cmd: line, output: sh });
 
-    if (!sh.ok) {
+    if (!sh.ok && sh.code === 0) {
+      sh.ok = true;
+    }
+
+    if (!sh.ok && sh.code !== 0) {
       ok = false;
       break;
     }
