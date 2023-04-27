@@ -1,0 +1,24 @@
+Absolutely! Here are the steps needed to create the repository as shell commands:
+
+1. Authenticate the AI assistant to access the Github API:
+```
+curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/
+```
+
+2. Create a new repository in the "test" organization with the name "test":
+```
+# shell
+curl -X POST -H "Authorization: token $GITHUB_TOKEN" -d '{"name": "test"}' https://api.github.com/orgs/octocat/repos
+```
+
+3. Clone the repository locally to obtain the URL:
+```
+curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/octocat/test | grep -o "git@[^ ]*" | head -n 1
+```
+
+4. Confirm that the repository was created successfully:
+```
+curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/octocat/test
+```
+
+Feel free to copy and paste these commands into your shell and run them. Let me know if there are any errors or if you need additional help.

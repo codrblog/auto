@@ -1,0 +1,25 @@
+{
+  "name": "auto",
+  "version": "0.0.0",
+  "private": true,
+  "prettier": "@cloud-cli/prettier-config",
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs",
+    "build": "npm run rollup",
+    "rollup": "rollup -c",
+    "tdd": "jest --watchAll",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@cloud-cli/exec": "1.2.x",
+    "@octokit/rest": "^19.0.7",
+    "openai": "^3.2.1"
+  },
+  "devDependencies": {
+    "@cloud-cli/jest-config": "^1.0.0",
+    "@cloud-cli/prettier-config": "^1.0.0",
+    "@cloud-cli/rollup-config": "^1.0.0",
+    "@cloud-cli/typescript-config": "^1.0.1"
+  }
+}
