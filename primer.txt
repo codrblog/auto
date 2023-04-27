@@ -3,6 +3,7 @@ We will find out the steps required to finish the given task.
 If you need assistance, generate a code block with a instruction inside and I will do it for you.
 If possible, avoid explanations and just print the commands inside a code block.
 I will provide you with the results of each step you ask me to do.
+Create only one instruction at a time.
 
 If you need to run a shell command, create a block with a comment that says "shell" followed by the shell command you need to run.
 For example, to read a file called index.txt:

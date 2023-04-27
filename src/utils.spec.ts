@@ -13,7 +13,7 @@ openAiMock.mockImplementation(() => ({
 jest.mock('openai', () => openAiMock());
 
 import { readFileSync } from 'fs';
-import { createSession, findCodeBlocks, getResponse, runCommands } from './utils.js';
+import { createSession, updatePrimer, findCodeBlocks, getResponse, runCommands } from './utils.js';
 
 const responseText = readFileSync(process.cwd() + '/mocks/response-sh.txt', 'utf8');
 
@@ -43,6 +43,23 @@ describe('commands', () => {
     ];
 
     expect(output).toEqual(commands);
+  });
+});
+
+describe('createSession', () => {
+  it('should prepare for next task', () => {
+    const primer = 'hello world';
+
+    updatePrimer(primer);
+    const session = createSession('input');
+
+    expect(session).toEqual({
+      messages: [
+        { role: 'system', content: primer },
+        { role: 'assistant', content: 'Yes, I\'m ready! What\'s the task?' },
+        { role: 'user', content: 'input' },
+      ],
+    });
   });
 });
 

@@ -3,7 +3,9 @@ import { ChatCompletionRequestMessage } from 'openai';
 import { ExecOutput, execString } from '@cloud-cli/exec';
 import ai from 'openai';
 
-const preamble = readFileSync('./primer.txt', 'utf-8');
+const preamble = {
+  text: readFileSync('./primer.txt', 'utf-8'),
+}
 
 export function findCodeBlocks(text: string) {
   const commands: string[] = [];
@@ -30,9 +32,13 @@ export function findCodeBlocks(text: string) {
   return commands;
 }
 
+export function updatePrimer(input: string) {
+  preamble.text = input;
+}
+
 export function createSession(input: string) {
   const messages: ChatCompletionRequestMessage[] = [
-    { role: 'system', content: preamble },
+    { role: 'system', content: preamble.text },
     { role: 'assistant', content: "Yes, I'm ready! What's the task?" },
     { role: 'user', content: input },
   ];
