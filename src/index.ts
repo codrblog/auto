@@ -27,13 +27,18 @@ export async function onRequest(request, response) {
 
   try {
     const session = createSession(body);
-    console.log(body);
+    console.log('INPUT %s\n', body);
 
-    while (0) {
+    while (1) {
       const completion = await getResponse(session.messages);
-      const commands = findCodeBlocks(completion);
+      session.messages.push({
+        role: 'assistant',
+        content: completion,
+      });
 
-      console.log('NEXT', completion, commands);
+      const commands = findCodeBlocks(completion);
+      console.log('NEXT %s', completion);
+      console.log('COMMANDS:', JSON.stringify(commands, null, 2));
 
       if (!commands) {
         console.log('HALT');
@@ -43,7 +48,15 @@ export async function onRequest(request, response) {
       const run = await runCommands(commands);
 
       if (run.ok) {
-        break;
+        session.messages.push({
+          role: 'user',
+          content:
+            'These are the results:\n```' +
+            run.outputs.map((o) => ['#' + o.cmd, o.output.stdout].join('\n')).join('\n\n') +
+            '```\nAnything else to execute?',
+        });
+        // console.log('COMPLETED');
+        // break;
       }
 
       const lastCmd = run.outputs[run.outputs.length - 1];
@@ -56,7 +69,7 @@ export async function onRequest(request, response) {
 
     response.end(JSON.stringify(session.messages.slice(3)));
   } catch (error) {
-    console.log(error);
+    console.log('ERROR', error);
     response.writeHead(500);
     response.end(String(error));
   }

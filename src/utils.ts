@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
-import { ChatCompletionRequestMessage } from "openai";
+import { readFileSync } from 'fs';
+import { ChatCompletionRequestMessage } from 'openai';
 import { ExecOutput, execString } from '@cloud-cli/exec';
 import ai from 'openai';
 
@@ -27,9 +27,9 @@ export function findCodeBlocks(text: string) {
 
 export function createSession(input: string) {
   const messages: ChatCompletionRequestMessage[] = [
-    { role: "system", content: preamble },
-    { role: "assistant", content: "Yes, I'm ready! What's the task?" },
-    { role: "user", content: input },
+    { role: 'system', content: preamble },
+    { role: 'assistant', content: "Yes, I'm ready! What's the task?" },
+    { role: 'user', content: input },
   ];
 
   return { messages };
@@ -43,9 +43,9 @@ export async function getResponse(messages: ChatCompletionRequestMessage[]) {
   const completion = await connector(messages);
   const end = Date.now();
 
-  console.info('Completions finished in %d', end - start);
+  console.info('Completions finished in %d seconds', (end - start) / 1000);
 
-  return completion.data.choices.map((c) => c.message?.content).join("\n");
+  return completion.data.choices.map((c) => c.message?.content).join('\n');
 }
 
 function getOpenAiConnector() {
@@ -58,11 +58,14 @@ function getOpenAiConnector() {
 }
 
 export async function runCommands(commands: string[]) {
-  const outputs: Array<{ cmd: string, output: ExecOutput}> = [];
+  const outputs: Array<{ cmd: string; output: ExecOutput }> = [];
   let ok = true;
 
   for (const cmd of commands) {
-    const line = cmd.split('\n').filter(s => !s.startsWith('#')).join('\n');
+    const line = cmd
+      .split('\n')
+      .filter((s) => !s.startsWith('#'))
+      .join('\n');
     const sh = await execString(line);
 
     console.log(line, sh);
