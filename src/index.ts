@@ -24,6 +24,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
     console.log('Invalid request', request.method, request.url);
     response.writeHead(404);
     response.end();
+    return;
   }
 
   const body = await readBody(request);
@@ -51,7 +52,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
       logger.log('NEXT: ' + completion);
       logger.log('COMMANDS:\n' + commands.join('\n'));
 
-      if (!commands) {
+      if (!commands.length) {
         logger.log('HALT');
         break;
       }
