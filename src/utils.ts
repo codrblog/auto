@@ -83,6 +83,8 @@ export async function runCommands(commands: string[]) {
 
     if (!sh.ok && sh.code === 0) {
       sh.ok = true;
+      sh.stderr = '';
+      sh.error = undefined;
     }
 
     if (!sh.ok && sh.code !== 0) {

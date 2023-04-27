@@ -97,8 +97,8 @@ describe('runCommands', () => {
             code: expect.any(Number),
             ok: true,
             stdout: expect.any(String),
-            stderr: expect.any(String),
-            error: expect.any(Error),
+            stderr: '',
+            error: undefined,
           },
         },
         {
