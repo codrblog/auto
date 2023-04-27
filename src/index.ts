@@ -1,5 +1,7 @@
 import { IncomingMessage, createServer } from 'http';
-import { createSession, findCodeBlocks, getResponse, runCommands } from './utils';
+import { createSession, findCodeBlocks, getResponse, runCommands } from './utils.js';
+import logger from './file-logger.js';
+
 // import { createReadStream, readdirSync } from 'fs';
 // import { join } from 'path';
 
@@ -27,7 +29,7 @@ export async function onRequest(request, response) {
 
   try {
     const session = createSession(body);
-    console.log('INPUT %s\n', body);
+    logger.log('INPUT: ' + body);
 
     while (1) {
       const completion = await getResponse(session.messages);
@@ -37,11 +39,11 @@ export async function onRequest(request, response) {
       });
 
       const commands = findCodeBlocks(completion);
-      console.log('NEXT %s', completion);
-      console.log('COMMANDS:', JSON.stringify(commands, null, 2));
+      logger.log('NEXT %s', completion);
+      logger.log('COMMANDS:', JSON.stringify(commands, null, 2));
 
       if (!commands) {
-        console.log('HALT');
+        logger.log('HALT');
         break;
       }
 
@@ -69,9 +71,9 @@ export async function onRequest(request, response) {
 
     response.end(JSON.stringify(session.messages.slice(3)));
   } catch (error) {
-    console.log('ERROR', error);
     response.writeHead(500);
     response.end(String(error));
+    logger.log('ERROR', error);
   }
 }
 

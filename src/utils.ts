@@ -68,7 +68,6 @@ export async function runCommands(commands: string[]) {
       .join('\n');
     const sh = await execString(line);
 
-    console.log(line, sh);
     outputs.push({ cmd, output: sh });
 
     if (!sh.ok) {

@@ -17,6 +17,8 @@ import { createSession, findCodeBlocks, getResponse, runCommands } from './utils
 
 const responseText = readFileSync(process.cwd() + '/mocks/response-sh.txt', 'utf8');
 
+process.env.APP_LOGS = process.cwd() + '/log.txt';
+
 describe('commands', () => {
   it('should ignore text without blocks', () => {
     const input = 'simple test';
