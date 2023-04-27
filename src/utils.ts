@@ -7,9 +7,14 @@ const preamble = readFileSync('./primer.txt', 'utf-8');
 
 export function findCodeBlocks(text: string) {
   const commands: string[] = [];
+  const singleCommand = text.startsWith('#shell') || text.startsWith('# shell');
 
-  if (text.indexOf('```') === -1) {
+  if (text.indexOf('```') === -1 && !singleCommand) {
     return [];
+  }
+
+  if (singleCommand) {
+    return [text.trim()];
   }
 
   while (1) {

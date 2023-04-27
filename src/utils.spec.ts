@@ -27,6 +27,12 @@ describe('commands', () => {
     expect(output).toEqual([]);
   });
 
+  it('should not ignore text that starts with a comment', () => {
+    const inputs = ['# shell\nsimple test', '#shell\nsimple test'];
+
+    inputs.forEach((input) => expect(findCodeBlocks(input)).toEqual([input]));
+  });
+
   it('should find commands in a text', () => {
     const output = findCodeBlocks(responseText);
     const commands = [
