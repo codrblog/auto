@@ -55,16 +55,16 @@ export async function onRequest(request, response) {
             run.outputs.map((o) => ['#' + o.cmd, o.output.stdout].join('\n')).join('\n\n') +
             '```\nAnything else to execute?',
         });
-        // console.log('COMPLETED');
-        // break;
       }
 
-      const lastCmd = run.outputs[run.outputs.length - 1];
-      const error = String(lastCmd.output.error || lastCmd.output.stderr);
-      session.messages.push({
-        role: 'user',
-        content: `The command \`${lastCmd.cmd}\` failed with this error: ${error}. Fix it and give me the next command block.`,
-      });
+      if (!run.ok) {
+        const lastCmd = run.outputs[run.outputs.length - 1];
+        const error = String(lastCmd.output.error || lastCmd.output.stderr);
+        session.messages.push({
+          role: 'user',
+          content: `The command \`${lastCmd.cmd}\` failed with this error: ${error}. Fix it and give me the next command block.`,
+        });
+      }
     }
 
     response.end(JSON.stringify(session.messages.slice(3)));
