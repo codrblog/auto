@@ -74,7 +74,7 @@ function sanitizeCommand(cmd) {
       .split('\n')
       .filter((s) => !s.startsWith('#'))
       .map(s => s.replace(escapeSlash, '').trim())
-      .join(' ');
+      .join(' && ');
 }
 
 export async function runCommands(commands: string[]) {
