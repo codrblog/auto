@@ -1,6 +1,13 @@
-import { createWriteStream } from 'fs';
+import { createWriteStream, statSync } from 'fs';
 
-let file = createWriteStream(process.env.APP_LOGS);
+const logFilePath = process.env.APP_LOGS;
+
+let file: any;
+
+if (logFilePath) {
+  const stat = statSync(logFilePath, { throwIfNoEntry: false });
+  file = createWriteStream(logFilePath, { start: stat?.isFile() ? stat.size : 0 });
+}
 
 function write(type: string, line: string) {
   const time = timestamp();
@@ -9,7 +16,7 @@ function write(type: string, line: string) {
     .map((s) => `[${type}] [${time}] ${s}`)
     .join('\n');
 
-  file.write(str + '\n');
+  file?.write(str + '\n');
   process.stdout.write(str + '\n');
 }
 
