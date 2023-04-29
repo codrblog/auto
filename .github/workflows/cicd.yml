@@ -6,6 +6,4 @@ jobs:
     uses: cloud-cli/workflows/.github/workflows/docker-ghcr-build.yml@main
     with:
       name: codrblog/auto
-      baseImage: cloud-cli/node:latest
       defaultBranch: main
-      buildCommand: docker run --rm -v $PWD:/home -w /home --entrypoint /usr/local/bin/npm node:latest run ci

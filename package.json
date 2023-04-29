@@ -5,7 +5,6 @@
   "prettier": "@cloud-cli/prettier-config",
   "type": "module",
   "scripts": {
-    "ci": "npm i && npm run test && npm run build",
     "start": "node index.js",
     "build": "npm run rollup",
     "rollup": "rollup -c",
