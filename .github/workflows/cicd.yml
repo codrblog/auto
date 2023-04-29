@@ -1,5 +1,7 @@
 on:
-  - push
+  push:
+    branches:
+    - main
 
 jobs:
   build:
@@ -7,3 +9,4 @@ jobs:
     with:
       name: codrblog/auto
       defaultBranch: main
+      baseImage: 'node:latest'
