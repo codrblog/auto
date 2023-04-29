@@ -69,7 +69,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
     response.end(String(error));
     logger.log('ERROR: ' + String(error));
   } finally {
-    streams.get(uid).end();
+    streams.get(uid)?.end();
     streams.delete(uid);
   }
 }
