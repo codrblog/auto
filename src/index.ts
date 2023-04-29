@@ -3,8 +3,7 @@ import { createSession, updatePrimer, findCodeBlocks, getResponse, runCommands }
 import logger from './file-logger.js';
 import { randomUUID } from 'crypto';
 
-let streams = new Map();
-
+const streams = new Map();
 const sendEvent = (uid, eventName, data) => {
   if (!streams.has(uid)) { return; }
 
@@ -60,17 +59,17 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   
   const uid = randomUUID();
   (request as any).uid = uid;
-  response.setHeader('Session-ID', uid);
-  response.writeHead(202);
+  response.writeHead(202, { 'Session-ID': uid });
 
   try {
-    const sessionJson = runTask(uid, request);
+    const sessionJson = await runTask(uid, request);
     response.end(sessionJson);
   } catch (error) {
     sendEvent(uid, 'error', String(error));
     response.end(String(error));
     logger.log('ERROR: ' + String(error));
   } finally {
+    streams.get(uid).end();
     streams.delete(uid);
   }
 }
