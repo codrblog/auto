@@ -55,8 +55,9 @@ async function runTask(request: IncomingMessage, response: ServerResponse) {
 
   const session = createSession(body);
   logger.log('START: ' + body);
+  let maxCycles = 10;
 
-  while (1) {
+  while (maxCycles) {
     if (!waiting) {
       logger.log('CANCELLED');
       break;
@@ -84,17 +85,19 @@ async function runTask(request: IncomingMessage, response: ServerResponse) {
         role: 'user',
         content:
           'These are the results:\n' +
-          run.outputs.map((o) => ['#' + o.cmd, o.output.stdout].join('\n')).join('\n\n') +
-          '\n\nAnything else to execute?',
+          run.outputs.map((o) => ['# ' + o.cmd, (o.output.stdout || 'no output')].join('\n')).join('\n\n') +
+          '\n\nAnything else?',
       });
     }
 
     if (!run.ok) {
       const lastCmd = run.outputs[run.outputs.length - 1];
       const error = String(lastCmd.output.error || lastCmd.output.stderr);
+
+      maxCycles--;
       session.messages.push({
         role: 'user',
-        content: `The command:\n\`${lastCmd.cmd}\`\n has failed with this error:\n${error}\nFix the command and give me in the next instruction.`,
+        content: `The command:\n\`${lastCmd.cmd}\`\n has failed with this error:\n${error}\nFix the command and write in the next instruction.`,
       });
     }
   }
