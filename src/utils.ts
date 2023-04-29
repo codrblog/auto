@@ -68,13 +68,12 @@ function getOpenAiConnector() {
   return (messages: any) => openai.createChatCompletion({ model, messages });
 }
 
-const escapeSlash = /\\$/g
 function sanitizeCommand(cmd) {
   return cmd
       .split('\n')
       .filter((s) => !s.startsWith('#'))
-      .map(s => s.replace(escapeSlash, '').trim())
-      .join(' && ');
+      .map(s => { s = s.trim(); return s.endsWith('\\') ? s.slice(0, -1) : s + ';'; })
+      .join(' ');
 }
 
 export async function runCommands(commands: string[]) {
@@ -83,7 +82,6 @@ export async function runCommands(commands: string[]) {
 
   for (const cmd of commands) {
     const line = sanitizeCommand(cmd);
-
     const sh = await execString(line);
     outputs.push({ cmd: line, output: sh });
 

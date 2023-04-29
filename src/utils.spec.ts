@@ -92,14 +92,14 @@ describe('fetch a completion', () => {
 
 describe('runCommands', () => {
   it('should execute commands in a list', async () => {
-    const commands = ['# shell\npwd', 'curl \\\n https://google.com/', 'invalid-command-1'];
+    const commands = ['# shell\npwd', 'curl \\\n https://google.com/', 'cd mocks\nls', 'invalid-command-1'];
     const output = await runCommands(commands);
 
     expect(output).toEqual({
       ok: false,
       outputs: [
         {
-          cmd: 'pwd',
+          cmd: 'pwd;',
           output: {
             code: 0,
             ok: true,
@@ -109,7 +109,7 @@ describe('runCommands', () => {
           },
         },
         {
-          cmd: 'curl https://google.com/',
+          cmd: 'curl  https://google.com/;',
           output: {
             code: expect.any(Number),
             ok: true,
@@ -119,7 +119,17 @@ describe('runCommands', () => {
           },
         },
         {
-          cmd: 'invalid-command-1',
+          cmd: 'cd mocks; ls;',
+          output: {
+            code: expect.any(Number),
+            ok: true,
+            stdout: expect.any(String),
+            stderr: '',
+            error: undefined,
+          },
+        },
+        {
+          cmd: 'invalid-command-1;',
           output: {
             code: expect.any(Number),
             ok: false,
