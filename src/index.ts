@@ -108,5 +108,8 @@ async function runTask(request: IncomingMessage, response: ServerResponse) {
 }
 
 if (process.env.PORT) {
-  createServer(onRequest).listen(process.env.PORT);
+  createServer(onRequest).listen(process.env.PORT, () => {
+    process.chdir(process.env.APP_WORKDIR);
+    console.log('Started at %s and %d', process.env.APP_WORKDIR, process.env.PORT);
+  });
 }
