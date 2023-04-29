@@ -20,12 +20,12 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   }
 
   if (request.url.startsWith('/events?') && request.method === 'GET') {
-    const uid = new URL('http://localhost/events?uid=123').searchParams.get('uid');
+    const uid = new URL('http://localhost' + request.url).searchParams.get('uid');
     if (uid) {
       streams.set(uid, response);
-      response.writeHead(202);
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
+      response.writeHead(202);
       return;
     }
   }
