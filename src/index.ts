@@ -61,13 +61,13 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   const uid = randomUUID();
   (request as any).uid = uid;
   response.setHeader('Session-ID', uid);
-  response.writeHead(201);
+  response.writeHead(202);
 
   try {
-    const sessionJson = runTask(uid, request, response);
+    const sessionJson = runTask(uid, request);
     response.end(sessionJson);
   } catch (error) {
-    sendEvent('error', String(error));
+    sendEvent(uid, 'error', String(error));
     response.end(String(error));
     logger.log('ERROR: ' + String(error));
   } finally {
@@ -83,7 +83,7 @@ async function readBody(request: IncomingMessage): Promise<string> {
   });
 }
 
-async function runTask(uid: string, request: IncomingMessage, response: ServerResponse) {
+async function runTask(uid: string, request: IncomingMessage) {
   let waiting = true;
   let maxCycles = 5;
 
