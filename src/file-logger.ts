@@ -5,7 +5,7 @@ const logFilePath = process.env.APP_LOGS;
 let file: any;
 
 if (logFilePath) {
-  const stat = statSync(logFilePath, { throwIfNoEntry: false });
+  const stat = statSync(logFilePath);
   file = createWriteStream(logFilePath, { start: stat?.isFile() ? stat.size : 0 });
 }
 

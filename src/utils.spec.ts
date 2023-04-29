@@ -99,7 +99,7 @@ describe('runCommands', () => {
       ok: false,
       outputs: [
         {
-          cmd: 'pwd;',
+          cmd: 'pwd',
           output: {
             code: 0,
             ok: true,
@@ -109,7 +109,7 @@ describe('runCommands', () => {
           },
         },
         {
-          cmd: 'curl  https://google.com/;',
+          cmd: 'curl \\\n https://google.com/',
           output: {
             code: expect.any(Number),
             ok: true,
@@ -119,7 +119,7 @@ describe('runCommands', () => {
           },
         },
         {
-          cmd: 'cd mocks; ls;',
+          cmd: 'cd mocks\nls',
           output: {
             code: expect.any(Number),
             ok: true,
@@ -129,7 +129,7 @@ describe('runCommands', () => {
           },
         },
         {
-          cmd: 'invalid-command-1;',
+          cmd: 'invalid-command-1',
           output: {
             code: expect.any(Number),
             ok: false,

@@ -70,10 +70,11 @@ function getOpenAiConnector() {
 
 function sanitizeCommand(cmd) {
   return cmd
-      .split('\n')
-      .filter((s) => !s.startsWith('#'))
-      .map(s => { s = s.trim(); return s.endsWith('\\') ? s.slice(0, -1) : s + ';'; })
-      .join(' ');
+    .split('\n')
+    .filter((s) => !s.startsWith('#'))
+    .join('\n');
+  // .map(s => { s = s.trim(); return s.endsWith('\\') ? s.slice(0, -1) : s + ';'; })
+  // .join(' ');
 }
 
 export async function runCommands(commands: string[]) {
