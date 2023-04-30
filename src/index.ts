@@ -59,14 +59,17 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   
   const uid = randomUUID();
   (request as any).uid = uid;
-  response.writeHead(202, { 'Session-ID': uid });
+  response.writeHead(202, { 
+    'Session-ID': uid,
+    'Location': '/events?' + uid
+  });
+  response.end(uid);
 
   try {
     const sessionJson = await runTask(uid, request);
-    response.end(sessionJson);
+    
   } catch (error) {
     sendEvent(uid, 'error', String(error));
-    response.end(String(error));
     logger.log('ERROR: ' + String(error));
   } finally {
     streams.get(uid)?.end();
