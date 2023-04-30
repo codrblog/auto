@@ -19,13 +19,17 @@ export function findCodeBlocks(text: string) {
     return [text.trim()];
   }
 
+  const shellStart = /^shell\b/;
+
   while (1) {
-    let start = text.indexOf('```');
+    const start = text.indexOf('```');
 
     if (start === -1) break;
 
-    let end = text.indexOf('```', start + 3);
-    commands.push(text.slice(start + 3, end).trim());
+    const end = text.indexOf('```', start + 3);
+    let next = text.slice(start + 3, end).trim();
+    next = next.replace(shellStart, '');
+    commands.push('set -xe\n' + next.trim());
     text = text.slice(end + 3);
   }
 
