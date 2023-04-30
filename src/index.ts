@@ -62,7 +62,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   console.log(request.headers);
   response.writeHead(302, { 
     'Session-ID': uid,
-    'Location': `https://${request.headers.host}/events?${uid}`
+    'Location': `https://${request.headers['x-forwarded-for']}/events?${uid}`
   });
   response.end(uid);
 
