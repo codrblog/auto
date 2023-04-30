@@ -8,8 +8,8 @@ const sendEvent = (uid, eventName, data) => {
   if (!streams.has(uid)) { return; }
 
   const stream = streams.get(uid);
-  stream.write('event: ' + eventName);
-  stream.write('data: ' + JSON.stringify(data));
+  stream.write('event: ' + eventName + '\n');
+  stream.write('data: ' + JSON.stringify(data) + '\n\n');
 };
 
 export async function onRequest(request: IncomingMessage, response: ServerResponse) {
@@ -28,7 +28,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
       streams.set(uid, response);
       response.setHeader('Content-Type', 'text/event-stream');
       response.setHeader('Cache-Control', 'no-cache');
-      response.writeHead(202);
+      response.writeHead(200);
       return;
     }
   }
