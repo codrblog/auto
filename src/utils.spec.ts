@@ -13,7 +13,8 @@ openAiMock.mockImplementation(() => ({
 jest.mock('openai', () => openAiMock());
 
 import { readFileSync } from 'fs';
-import { createSession, updatePrimer, findCodeBlocks, getResponse, runCommands } from './utils.js';
+import { EventEmitter } from 'events';
+import { createSession, updatePrimer, findCodeBlocks, getResponse, runCommands, readBody } from './utils.js';
 
 const responseText = readFileSync(process.cwd() + '/mocks/response-sh.txt', 'utf8');
 
@@ -36,10 +37,10 @@ describe('commands', () => {
   it('should find commands in a text', () => {
     const output = findCodeBlocks(responseText);
     const commands = [
-      'curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/',
-      '# shell\ncurl -X POST -H "Authorization: token $GITHUB_TOKEN" -d \'{"name": "test"}\' https://api.github.com/orgs/octocat/repos',
-      'curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/octocat/test | grep -o "git@[^ ]*" | head -n 1',
-      'curl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/octocat/test',
+      'set -e\ncurl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/',
+      'set -e\n# shell\ncurl -X POST -H "Authorization: token $GITHUB_TOKEN" -d \'{"name": "test"}\' https://api.github.com/orgs/octocat/repos',
+      'set -e\ncurl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/octocat/test | grep -o "git@[^ ]*" | head -n 1',
+      'set -e\ncurl -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/octocat/test',
     ];
 
     expect(output).toEqual(commands);
@@ -56,9 +57,20 @@ describe('createSession', () => {
     expect(session).toEqual({
       messages: [
         { role: 'system', content: primer },
-        { role: 'assistant', content: 'Yes, I\'m ready! What\'s the task?' },
+        { role: 'assistant', content: "Yes, I'm ready! What's the task?" },
         { role: 'user', content: 'input' },
       ],
+    });
+  });
+
+  describe('readBody', () => {
+    it('should read data from a stream as a promise', async () => {
+      const request = new EventEmitter();
+      const output = readBody(request as any);
+      request.emit('data', Buffer.from('test me up'));
+      request.emit('end', '');
+
+      await expect(output).resolves.toBe('test me up');
     });
   });
 });

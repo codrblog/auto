@@ -1,11 +1,12 @@
 import { readFileSync } from 'fs';
+import { IncomingMessage } from 'http';
 import { ChatCompletionRequestMessage } from 'openai';
 import { ExecOutput, execString } from '@cloud-cli/exec';
 import ai from 'openai';
 
 const preamble = {
   text: readFileSync('./primer.txt', 'utf-8'),
-}
+};
 
 export function findCodeBlocks(text: string) {
   const commands: string[] = [];
@@ -77,8 +78,6 @@ function sanitizeCommand(cmd) {
     .split('\n')
     .filter((s) => !s.startsWith('#'))
     .join('\n');
-  // .map(s => { s = s.trim(); return s.endsWith('\\') ? s.slice(0, -1) : s + ';'; })
-  // .join(' ');
 }
 
 export async function runCommands(commands: string[]) {
@@ -103,4 +102,12 @@ export async function runCommands(commands: string[]) {
   }
 
   return { ok, outputs };
+}
+
+export async function readBody(request: IncomingMessage): Promise<string> {
+  return new Promise((resolve) => {
+    const chunks: any[] = [];
+    request.on('data', (c) => chunks.push(c));
+    request.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+  });
 }
