@@ -29,7 +29,7 @@ export function findCodeBlocks(text: string) {
     const end = text.indexOf('```', start + 3);
     let next = text.slice(start + 3, end).trim();
     next = next.replace(shellStart, '');
-    commands.push('set -xe\n' + next.trim());
+    commands.push('set -e\n' + next.trim());
     text = text.slice(end + 3);
   }
 
