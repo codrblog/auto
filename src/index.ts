@@ -66,7 +66,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   response.end(uid);
 
   try {
-    const sessionJson = await runTask(uid, request);
+    await runTask(uid, request);
     
   } catch (error) {
     sendEvent(uid, 'error', String(error));
