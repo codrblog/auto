@@ -61,8 +61,6 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   }
   
   const uid = randomUUID();
-  (request as any).uid = uid;
-  console.log(request.headers);
   response.writeHead(302, { 
     'Session-ID': uid,
     'Location': `https://${request.headers['x-forwarded-for']}/events?uid=${uid}`
@@ -70,8 +68,8 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   response.end(uid);
 
   try {
-    await runTask(uid, request);
-    
+    const task = await readBody(request);
+    await runTask(uid, task);
   } catch (error) {
     sendEvent(uid, 'error', String(error));
     logger.log('ERROR: ' + String(error));
@@ -89,11 +87,9 @@ async function readBody(request: IncomingMessage): Promise<string> {
   });
 }
 
-async function runTask(uid: string, request: IncomingMessage) {
+async function runTask(uid: string, task: string) {
   let maxCycles = 5;
-
-  const body = await readBody(request);
-  const session = createSession(body);
+  const session = createSession(task);
 
   while (maxCycles) {
     const completion = await getResponse(session.messages);
