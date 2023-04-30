@@ -87,22 +87,12 @@ async function readBody(request: IncomingMessage): Promise<string> {
 }
 
 async function runTask(uid: string, request: IncomingMessage) {
-  let waiting = true;
   let maxCycles = 5;
-
-  request.on('close', () => (waiting = false));
-  request.on('error', () => (waiting = false));
 
   const body = await readBody(request);
   const session = createSession(body);
 
   while (maxCycles) {
-    if (!waiting) {
-      logger.log('CANCELLED');
-      sendEvent(uid, 'cancel', null);
-      break;
-    }
-
     const completion = await getResponse(session.messages);
     session.messages.push({
       role: 'assistant',
