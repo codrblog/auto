@@ -59,9 +59,10 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   
   const uid = randomUUID();
   (request as any).uid = uid;
-  response.writeHead(202, { 
+  console.log(request.headers);
+  response.writeHead(302, { 
     'Session-ID': uid,
-    'Location': '/events?' + uid
+    'Location': `https://${request.headers.host}/events?${uid}`
   });
   response.end(uid);
 
