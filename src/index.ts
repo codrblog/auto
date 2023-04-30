@@ -19,8 +19,11 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
     return;
   }
 
-  if (request.url.startsWith('/events?') && request.method === 'GET') {
-    const uid = new URL('http://localhost' + request.url).searchParams.get('uid');
+  const incoming = new URL(request.url, `http://${request.headers['x-forwarded-for']}`);
+
+  if (incoming.pathname === '/events' && request.method === 'GET') {
+    const uid = incoming.searchParams.get('uid');
+    
     if (uid) {
       streams.set(uid, response);
       response.setHeader('Content-Type', 'text/event-stream');
@@ -31,19 +34,19 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   }
 
   if (request.method !== 'POST') {
-    console.log('Invalid request', request.method, request.url);
+    console.log('Invalid request', String(incoming));
     response.writeHead(404);
     response.end();
     return;
   }
 
-  if (request.url === '/primer') {
+  if (incoming.pathname === '/primer') {
     updatePrimer(await readBody(request));
     response.writeHead(204);
     return;
   }
 
-  if (request.url === '/issues') {
+  if (incoming.pathname === '/issues') {
     const body = await readBody(request);
     response.writeHead(202);
     response.end();
@@ -51,7 +54,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
     return;
   }
 
-  if (request.url !== '/task') {
+  if (incoming.pathname !== '/task') {
     response.writeHead(404);
     response.end();
     return;
@@ -62,7 +65,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   console.log(request.headers);
   response.writeHead(302, { 
     'Session-ID': uid,
-    'Location': `https://${request.headers['x-forwarded-for']}/events?${uid}`
+    'Location': `https://${request.headers['x-forwarded-for']}/events?uid=${uid}`
   });
   response.end(uid);
 
