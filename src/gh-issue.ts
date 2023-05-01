@@ -23,6 +23,10 @@ export function isRequestSignatureValid(requestSignature: string, body: string) 
 export const isIssueActionable = (
   event: IssueOpened | IssueEdited | CommentCreated,
 ): event is IssueOpened | IssueEdited | CommentCreated => {
+  if (!event.issue) {
+    return false;
+  }
+
   const validOrgAndOpen = event.issue.state === 'open' && authorizedOrgs.includes(event.organization.login);
   const validIssue = ['opened', 'edited'].includes(event.action) && authorizedUsers.includes(event.issue.user.login);
   const validComment =
