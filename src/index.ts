@@ -55,7 +55,10 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
     const body = await readBody(request);
     response.writeHead(202);
     response.end();
-    console.log(body);
+
+    if (process.env.DEBUG) {
+      console.log(body);
+    }
 
     if (isRequestSignatureValid(String(request.headers['x-hub-signature']), body)) {
       processWebhookEvent(JSON.parse(body));
@@ -104,7 +107,8 @@ async function processWebhookEvent(event: any) {
 
   const task = `Next task comes from ${issue.repository.url}.
 The repository is already cloned at ${process.cwd()}/${issue.repository.name}
-If task is completed, close issue number ${issue.issue.number} at ${issue.issue.url}.
+If a task requires reading the content of files, generate only commands to read them and nothing else.
+If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
 
 # ${issue.issue.title}
 
