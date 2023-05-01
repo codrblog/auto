@@ -2,7 +2,11 @@ import { createHmac } from 'crypto';
 import { runCommands } from './utils.js';
 import { existsSync } from 'fs';
 import { join } from 'path';
-// import type * as gh from '@octokit/types';
+import type { EmitterWebhookEvent } from '@octokit/webhooks';
+
+export type IssueOpened = EmitterWebhookEvent<'issues.opened'>['payload'];
+export type IssueEdited = EmitterWebhookEvent<'issues.edited'>['payload'];
+export type CommentCreated = EmitterWebhookEvent<'issue_comment.created'>['payload'];
 
 const [authorizedUsers, authorizedOrgs] = [process.env.APP_USERS, process.env.APP_ORGS].map((s) =>
   s
@@ -16,15 +20,20 @@ export function isRequestSignatureValid(requestSignature: string, body: string) 
   return payloadSignature === requestSignature;
 }
 
-export const isIssueActionable = (event) => {
+export const isIssueActionable = (
+  event: IssueOpened | IssueEdited | CommentCreated,
+): event is IssueOpened | IssueEdited | CommentCreated => {
   const validOrgAndOpen = event.issue.state === 'open' && authorizedOrgs.includes(event.organization.login);
   const validIssue = ['opened', 'edited'].includes(event.action) && authorizedUsers.includes(event.issue.user.login);
-  const validComment = ['created'].includes(event.action) && authorizedUsers.includes(event.comment.user.login);
+  const validComment =
+    ['created'].includes(event.action) && authorizedUsers.includes((event as CommentCreated).comment.user.login);
 
   return validOrgAndOpen && (validIssue || validComment);
 };
 
-export const readIssueDetails = (event) => {
+export const readIssueDetails = (event: IssueOpened | IssueEdited | CommentCreated) => {
+  const comment = 'comment' in event ? (event as CommentCreated).comment : null;
+
   return {
     issue: {
       id: event.issue.id,
@@ -39,13 +48,11 @@ export const readIssueDetails = (event) => {
       url: event.repository.html_url,
       cloneUrl: `https://codrblog:$GITHUB_TOKEN@github.com/${event.repository.full_name}.git`,
     },
-    comment: !event.comment
-      ? null
-      : {
-          body: event.comment.body,
-        },
+    comment: !comment ? null : { body: comment.body },
   };
 };
+
+export type Issue = ReturnType<typeof readIssueDetails>;
 
 export async function prepareRepository(name: string, cloneUrl: string) {
   if (existsSync(join(process.cwd(), name))) {

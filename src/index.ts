@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { IncomingMessage, createServer, ServerResponse } from 'http';
 import { createSession, updatePrimer, findCodeBlocks, getResponse, runCommands, readBody } from './utils.js';
 import {
+  Issue,
   isIssueActionable,
   isRequestSignatureValid,
   prepareRepository,
@@ -107,7 +108,7 @@ async function processWebhookEvent(event: any) {
   }
 }
 
-async function runIssue(issue) {
+async function runIssue(issue: Issue) {
   const task = `Next task comes from ${issue.repository.url}.
 The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}
 If a task requires reading the content of files, generate only commands to read them and nothing else.
