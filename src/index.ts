@@ -80,19 +80,26 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   await tryTask(uid, task);
 }
 
+async function prepareRepository(name: string, cloneUrl: string) {
+  if (!existsSync(join(process.cwd(), name))) {
+    const clone = await runCommands([`git clone ${cloneUrl}`]);
+
+    if (!clone.ok) {
+      console.error('Failed to clone ' + cloneUrl, clone);
+      return false;
+    }
+  }
+}
+
 async function processWebhookEvent(event: any) {
   if (!isIssueActionable(event)) {
     return;
   }
 
   const issue = readIssueDetails(event);
-  if (existsSync(join(process.cwd(), issue.repository.name))) {
-    const clone = await runCommands([`git clone ${issue.repository.cloneUrl}`]);
-
-    if (!clone.ok) {
-      console.error('Failed to clone!', issue);
-      return;
-    }
+  const repository = await prepareRepository(issue.repository.name, issue.repository.cloneUrl);
+  if (repository === false) {
+    return;
   }
 
   const task = `Next task comes from ${issue.repository.url}.
