@@ -7,7 +7,7 @@ export function isRequestSignatureValid(requestSignature: string, body: string) 
 
 export const isIssueActionable = (event) => {
   return (
-    event.action === 'opened' &&
+    ['opened', 'edited'].includes(event.action) &&
     event.issue.state === 'open' &&
     event.sender.login === 'darlanalves' &&
     event.organization.login === 'codrblog'
