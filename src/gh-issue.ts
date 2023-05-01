@@ -55,10 +55,6 @@ export const readIssueDetails = (event: IssueOpened | IssueEdited | CommentCreat
 export type Issue = ReturnType<typeof readIssueDetails>;
 
 export async function prepareRepository(name: string, cloneUrl: string) {
-  if (existsSync(join(process.cwd(), name))) {
-    return;
-  }
-
   const commands = [];
   const [org, repo] = name.split('/');
 
@@ -66,7 +62,11 @@ export async function prepareRepository(name: string, cloneUrl: string) {
     commands.push('mkdir ' + org);
   }
 
-  commands.push(`cd ${org} && git clone ${cloneUrl} ${repo}`);
+  if (!existsSync(join(process.cwd(), name))) {
+    commands.push(`cd ${org} && git clone ${cloneUrl} ${repo}`);
+  } else {
+    commands.push(`cd ${name} && git pull --rebase --autostash`);
+  }
 
   const clone = await runCommands(commands);
   if (!clone.ok) {
