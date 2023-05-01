@@ -99,7 +99,7 @@ async function processWebhookEvent(event: any) {
     return;
   }
 
-  if (!issue.comment) {
+  if (!issue.comment || issue.comment.body === 'retry') {
     return await runIssue(issue);
   }
 
@@ -113,6 +113,7 @@ async function runIssue(issue: Issue) {
 The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}
 If a task requires reading the content of files, generate only commands to read them and nothing else.
 If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
+If you are done, commit all changes and push.
 
 # ${issue.issue.title}
 ${issue.issue.text}
@@ -147,8 +148,11 @@ async function runTask(uid: string, task: string) {
 
     const commands = findCodeBlocks(completion);
     sendEvent(uid, 'next', completion);
-    logger.log('NEXT: ' + completion);
-    logger.log('COMMANDS:\n' + commands.join('\n'));
+
+    if (process.env.DEBUG) {
+      logger.log('NEXT: ' + completion);
+      logger.log('COMMANDS:\n' + commands.join('\n'));
+    }
 
     if (!commands.length) {
       logger.log('HALT');
