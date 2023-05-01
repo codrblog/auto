@@ -1,9 +1,13 @@
 import { randomUUID } from 'crypto';
-import { existsSync } from 'fs';
-import { join } from 'path';
 import { IncomingMessage, createServer, ServerResponse } from 'http';
 import { createSession, updatePrimer, findCodeBlocks, getResponse, runCommands, readBody } from './utils.js';
-import { isIssueActionable, isRequestSignatureValid, readIssueDetails } from './gh-issue.js';
+import {
+  isIssueActionable,
+  isRequestSignatureValid,
+  prepareRepository,
+  pushAllChanges,
+  readIssueDetails,
+} from './gh-issue.js';
 import logger from './file-logger.js';
 
 const streams = new Map();
@@ -83,35 +87,33 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   await tryTask(uid, task);
 }
 
-async function prepareRepository(name: string, cloneUrl: string) {
-  if (!existsSync(join(process.cwd(), name))) {
-    const clone = await runCommands([`git clone ${cloneUrl}`]);
-
-    if (!clone.ok) {
-      console.error('Failed to clone ' + cloneUrl, clone);
-      return false;
-    }
-  }
-}
-
 async function processWebhookEvent(event: any) {
   if (!isIssueActionable(event)) {
     return;
   }
 
   const issue = readIssueDetails(event);
-  const repository = await prepareRepository(issue.repository.name, issue.repository.cloneUrl);
+  const repository = await prepareRepository(issue.repository.fullName, issue.repository.cloneUrl);
   if (repository === false) {
     return;
   }
 
+  if (!issue.comment) {
+    return await runIssue(issue);
+  }
+
+  if (issue.comment.body === 'push') {
+    return await pushAllChanges(issue.repository.fullName);
+  }
+}
+
+async function runIssue(issue) {
   const task = `Next task comes from ${issue.repository.url}.
-The repository is already cloned at ${process.cwd()}/${issue.repository.name}
+The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}
 If a task requires reading the content of files, generate only commands to read them and nothing else.
 If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
 
 # ${issue.issue.title}
-
 ${issue.issue.text}
 `;
 

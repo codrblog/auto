@@ -20,6 +20,7 @@
     "@cloud-cli/jest-config": "^1.0.0",
     "@cloud-cli/prettier-config": "^1.0.0",
     "@cloud-cli/rollup-config": "^1.0.0",
-    "@cloud-cli/typescript-config": "^1.0.1"
+    "@cloud-cli/typescript-config": "^1.0.1",
+    "@octokit/types": "^9.2.0"
   }
 }
