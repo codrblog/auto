@@ -1,7 +1,6 @@
 import { readFileSync } from 'fs';
 import { IncomingMessage } from 'http';
 import { ChatCompletionRequestMessage } from 'openai';
-import { ExecOutput, execString } from '@cloud-cli/exec';
 import ai from 'openai';
 
 const preamble = {
@@ -71,37 +70,6 @@ function getOpenAiConnector() {
   const openai = new ai.OpenAIApi(configuration);
 
   return (messages: any) => openai.createChatCompletion({ model, messages });
-}
-
-function sanitizeCommand(cmd) {
-  return cmd
-    .split('\n')
-    .filter((s) => !s.startsWith('#'))
-    .join('\n');
-}
-
-export async function runCommands(commands: string[]) {
-  const outputs: Array<{ cmd: string; output: ExecOutput }> = [];
-  let ok = true;
-
-  for (const cmd of commands) {
-    const line = sanitizeCommand(cmd);
-    const sh = await execString(line);
-    outputs.push({ cmd: line, output: sh });
-
-    if (!sh.ok && sh.code === 0) {
-      sh.ok = true;
-      sh.stderr = '';
-      sh.error = undefined;
-    }
-
-    if (!sh.ok && sh.code !== 0) {
-      ok = false;
-      break;
-    }
-  }
-
-  return { ok, outputs };
 }
 
 export async function readBody(request: IncomingMessage): Promise<string> {

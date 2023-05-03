@@ -1,41 +1,58 @@
 import { createHmac } from 'crypto';
-import { runCommands } from './utils.js';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import type { EmitterWebhookEvent } from '@octokit/webhooks';
+import { runCommands } from './shell.js';
 
 export type IssueOpened = EmitterWebhookEvent<'issues.opened'>['payload'];
 export type IssueEdited = EmitterWebhookEvent<'issues.edited'>['payload'];
+export type IssueClosed = EmitterWebhookEvent<'issues.closed'>['payload'];
 export type CommentCreated = EmitterWebhookEvent<'issue_comment.created'>['payload'];
 
-const [authorizedUsers, authorizedOrgs] = [process.env.APP_USERS, process.env.APP_ORGS].map((s) =>
-  s
-    .split(',')
-    .filter(Boolean)
-    .map((s) => s.trim()),
-);
+type AcceptedEvents = IssueOpened | IssueEdited | IssueClosed | CommentCreated;
+
+let sources: { authorizedUsers: string[]; authorizedOrgs: string[] };
+
+export function getAuthorizedSources() {
+  if (!sources) {
+    const [authorizedUsers, authorizedOrgs] = [process.env.APP_USERS || '', process.env.APP_ORGS || ''].map((s) =>
+      s
+        .split(',')
+        .filter(Boolean)
+        .map((s) => s.trim()),
+    );
+
+    return (sources = { authorizedUsers, authorizedOrgs });
+  }
+
+  return sources;
+}
 
 export function isRequestSignatureValid(requestSignature: string, body: string) {
   const payloadSignature = 'sha1=' + createHmac('sha1', process.env.GITHUB_SECRET).update(body).digest('hex');
   return payloadSignature === requestSignature;
 }
 
-export const isIssueActionable = (
-  event: IssueOpened | IssueEdited | CommentCreated,
-): event is IssueOpened | IssueEdited | CommentCreated => {
+export const isIssueActionable = (event: AcceptedEvents): event is AcceptedEvents => {
   if (!event.issue) {
     return false;
   }
 
-  const validOrg = authorizedOrgs.includes(event.organization.login);
-  const validIssue = ['opened', 'edited', 'closed'].includes(event.action) && authorizedUsers.includes(event.issue.user.login);
+  const sources = getAuthorizedSources();
+
+  const validOrg = sources.authorizedOrgs.includes(event.organization.login);
+
+  const validIssue =
+    ['opened', 'edited', 'closed'].includes(event.action) && sources.authorizedUsers.includes(event.issue.user.login);
+
   const validComment =
-    ['created'].includes(event.action) && authorizedUsers.includes((event as CommentCreated).comment.user.login);
+    ['created'].includes(event.action) &&
+    sources.authorizedUsers.includes((event as CommentCreated).comment.user.login);
 
   return validOrg && (validIssue || validComment);
 };
 
-export const readIssueDetails = (event: IssueOpened | IssueEdited | CommentCreated) => {
+export const readIssueDetails = (event: AcceptedEvents) => {
   const comment = 'comment' in event ? (event as CommentCreated).comment : null;
 
   return {
@@ -45,7 +62,7 @@ export const readIssueDetails = (event: IssueOpened | IssueEdited | CommentCreat
       title: event.issue.title,
       text: event.issue.body.replace(/\r\n/g, '\n'),
       url: event.issue.html_url,
-      state: event.issue.state
+      state: event.issue.state,
     },
     repository: {
       name: event.repository.name,

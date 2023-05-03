@@ -1,27 +1,8 @@
-import { randomUUID } from 'crypto';
 import { IncomingMessage, createServer, ServerResponse } from 'http';
-import { createSession, updatePrimer, findCodeBlocks, getResponse, runCommands, readBody } from './utils.js';
-import {
-  Issue,
-  isIssueActionable,
-  isRequestSignatureValid,
-  prepareRepository,
-  pushAllChanges,
-  readIssueDetails,
-} from './gh-issue.js';
-import logger from './file-logger.js';
-
-const historyCache = new Map();
-const streams = new Map();
-const sendEvent = (uid, eventName, data) => {
-  if (!streams.has(uid)) {
-    return;
-  }
-
-  const stream = streams.get(uid);
-  stream.write('event: ' + eventName + '\n');
-  stream.write('data: ' + JSON.stringify(data) + '\n\n');
-};
+import { addStream } from './streams.js';
+import { fromWebhook } from './webhook.js';
+import { standaloneTask } from './task.js';
+import { readBody, updatePrimer } from './utils.js';
 
 export async function onRequest(request: IncomingMessage, response: ServerResponse) {
   if (request.url === '/favicon.ico') {
@@ -31,16 +12,11 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   }
 
   const incoming = new URL(request.url, `http://${request.headers['x-forwarded-for']}`);
-
   if (incoming.pathname === '/events' && request.method === 'GET') {
     const uid = incoming.searchParams.get('uid');
 
     if (uid) {
-      streams.set(uid, response);
-      response.setHeader('Content-Type', 'text/event-stream');
-      response.setHeader('Cache-Control', 'no-cache');
-      response.writeHead(200);
-      return;
+      return addStream(uid, response);
     }
   }
 
@@ -58,161 +34,16 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   }
 
   if (incoming.pathname === '/issues') {
-    const body = await readBody(request);
-
-    if (process.env.DEBUG) {
-      console.log(body);
-    }
-
-    if (!isRequestSignatureValid(String(request.headers['x-hub-signature']), body)) {
-      console.log('Invalid signature: ' + request.headers['x-hub-signature']);
-      response.writeHead(404);
-      response.end();
-      return;
-    }
-
-    response.writeHead(202);
-    response.end();
-    processWebhookEvent(JSON.parse(body));
-    return;
+    fromWebhook(request, response);
   }
 
   if (incoming.pathname !== '/task') {
-    response.writeHead(404);
-    response.end();
+    standaloneTask(request, response);
     return;
   }
 
-  const task = await readBody(request);
-  const uid = randomUUID();
-  response.writeHead(302, {
-    'Session-ID': uid,
-    Location: `https://${request.headers['x-forwarded-for']}/events?uid=${uid}`,
-  });
-  response.end(uid);
-
-  await tryTask(task, uid);
-}
-
-async function processWebhookEvent(event: any) {
-  if (!isIssueActionable(event)) {
-    return;
-  }
-
-  const issue = readIssueDetails(event);
-
-  if (issue.state === 'closed' || event.action === 'closed') {
-    historyCache.delete(issue.repository.fullName + issue.issue.number);
-    return;
-  }
-
-  const repository = await prepareRepository(issue.repository.fullName, issue.repository.cloneUrl);
-  if (repository === false) {
-    return;
-  }
-
-  if (!issue.comment || issue.comment.body === 'retry') {
-    const task = `Context:
-    Next task comes from ${issue.repository.url}.
-    The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}
-    If a task requires reading the content of files, generate only commands to read them and nothing else.
-    If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
-    If you are done, commit all changes and push.
-    
-    Description:
-    # ${issue.issue.title}
-    ${issue.issue.text}
-    `;
-    return await tryTask(task);
-  }
-
-  if (issue.comment.body === 'push') {
-    return await pushAllChanges(issue.repository.fullName);
-  }
-
-  const taskFromComments = `
-  Context: we are completing a task from ${issue.repository.url}.
-  The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}.
-  If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
-  When you are done, commit all changes and push.
-  
-  Description:
-  # ${issue.issue.title}
-  ${issue.issue.text}
-
-  Next task:
-  ${issue.comment.body}
-  `;
-  return await tryTask(taskFromComments);
-}
-
-async function tryTask(task: string, uid = randomUUID()) {
-  try {
-    await runTask(uid, task);
-  } catch (error) {
-    sendEvent(uid, 'error', String(error));
-    logger.log('ERROR: ' + String(error));
-  } finally {
-    streams.get(uid)?.end();
-    streams.delete(uid);
-  }
-}
-
-async function runTask(uid: string, task: string) {
-  let maxCycles = 5;
-  const session = createSession(task);
-
-  while (maxCycles) {
-    const completion = await getResponse(session.messages);
-    session.messages.push({
-      role: 'assistant',
-      content: completion,
-    });
-
-    const commands = findCodeBlocks(completion);
-    sendEvent(uid, 'next', completion);
-
-    if (process.env.DEBUG) {
-      logger.log('NEXT: ' + completion);
-      logger.log('COMMANDS:\n' + commands.join('\n'));
-    }
-
-    if (!commands.length) {
-      logger.log('HALT');
-      sendEvent(uid, 'halt', null);
-      break;
-    }
-
-    const run = await runCommands(commands);
-
-    if (run.ok) {
-      const runOutput = run.outputs.map((o) => ['# ' + o.cmd, o.output.stdout || 'no output'].join('\n')).join('\n\n');
-      sendEvent(uid, 'results', runOutput);
-      maxCycles = 5;
-      session.messages.push({
-        role: 'user',
-        content: `Results:\n${runOutput}\n\nAnything else?`,
-      });
-    }
-
-    if (!run.ok) {
-      const lastCmd = run.outputs[run.outputs.length - 1];
-      const error = String(lastCmd.output.error || lastCmd.output.stderr);
-      sendEvent(uid, 'error', error);
-      maxCycles--;
-
-      session.messages.push({
-        role: 'user',
-        content: `Command \`${lastCmd.cmd}\` has failed with this error:\n${error}\nFix the command and write in the next instruction.`,
-      });
-    }
-  }
-
-  const sessionJson = JSON.stringify(session.messages.slice(3));
-  logger.log('END: ' + sessionJson);
-  sendEvent(uid, 'history', session.messages.slice(3));
-
-  return sessionJson;
+  response.writeHead(404);
+  response.end();
 }
 
 if (process.env.PORT) {
