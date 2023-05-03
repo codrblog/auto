@@ -11,6 +11,7 @@ import {
 } from './gh-issue.js';
 import logger from './file-logger.js';
 
+const historyCache = new Map();
 const streams = new Map();
 const sendEvent = (uid, eventName, data) => {
   if (!streams.has(uid)) {
@@ -90,7 +91,7 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   });
   response.end(uid);
 
-  await tryTask(uid, task);
+  await tryTask(task, uid);
 }
 
 async function processWebhookEvent(event: any) {
@@ -99,22 +100,30 @@ async function processWebhookEvent(event: any) {
   }
 
   const issue = readIssueDetails(event);
+
+  if (issue.state === 'closed' || event.action === 'closed') {
+    historyCache.delete(issue.repository.fullName + issue.issue.number);
+    return;
+  }
+
   const repository = await prepareRepository(issue.repository.fullName, issue.repository.cloneUrl);
   if (repository === false) {
     return;
   }
 
   if (!issue.comment || issue.comment.body === 'retry') {
-    const task = `Next task comes from ${issue.repository.url}.
+    const task = `Context:
+    Next task comes from ${issue.repository.url}.
     The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}
     If a task requires reading the content of files, generate only commands to read them and nothing else.
     If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
     If you are done, commit all changes and push.
     
+    Description:
     # ${issue.issue.title}
     ${issue.issue.text}
     `;
-    return await runTask(task);
+    return await tryTask(task);
   }
 
   if (issue.comment.body === 'push') {
@@ -134,15 +143,10 @@ async function processWebhookEvent(event: any) {
   Next task:
   ${issue.comment.body}
   `;
-  return await runTask(taskFromComments);
+  return await tryTask(taskFromComments);
 }
 
-async function runTask(task: string) {
-  const uid = randomUUID();
-  await tryTask(uid, task);
-}
-
-async function tryTask(uid: string, task: string) {
+async function tryTask(task: string, uid = randomUUID()) {
   try {
     await runTask(uid, task);
   } catch (error) {

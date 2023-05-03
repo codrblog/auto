@@ -27,12 +27,12 @@ export const isIssueActionable = (
     return false;
   }
 
-  const validOrgAndOpen = event.issue.state === 'open' && authorizedOrgs.includes(event.organization.login);
-  const validIssue = ['opened', 'edited'].includes(event.action) && authorizedUsers.includes(event.issue.user.login);
+  const validOrg = authorizedOrgs.includes(event.organization.login);
+  const validIssue = ['opened', 'edited', 'closed'].includes(event.action) && authorizedUsers.includes(event.issue.user.login);
   const validComment =
     ['created'].includes(event.action) && authorizedUsers.includes((event as CommentCreated).comment.user.login);
 
-  return validOrgAndOpen && (validIssue || validComment);
+  return validOrg && (validIssue || validComment);
 };
 
 export const readIssueDetails = (event: IssueOpened | IssueEdited | CommentCreated) => {
@@ -45,6 +45,7 @@ export const readIssueDetails = (event: IssueOpened | IssueEdited | CommentCreat
       title: event.issue.title,
       text: event.issue.body.replace(/\r\n/g, '\n'),
       url: event.issue.html_url,
+      state: event.issue.state
     },
     repository: {
       name: event.repository.name,
