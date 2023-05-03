@@ -58,16 +58,21 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
 
   if (incoming.pathname === '/issues') {
     const body = await readBody(request);
-    response.writeHead(202);
-    response.end();
 
     if (process.env.DEBUG) {
       console.log(body);
     }
 
-    if (isRequestSignatureValid(String(request.headers['x-hub-signature']), body)) {
-      processWebhookEvent(JSON.parse(body));
+    if (!isRequestSignatureValid(String(request.headers['x-hub-signature']), body)) {
+      console.log('Invalid signature: ' + request.headers['x-hub-signature']);
+      response.writeHead(404);
+      response.end();
+      return;
     }
+
+    response.writeHead(202);
+    response.end();
+    processWebhookEvent(JSON.parse(body));
     return;
   }
 
