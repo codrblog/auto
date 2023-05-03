@@ -8,6 +8,7 @@ import {
   readIssueDetails,
 } from './github.js';
 import { removeHistory } from './history.js';
+import { tryTask } from './task.js';
 
 export async function fromWebhook(request: IncomingMessage, response: ServerResponse) {
   const body = await readBody(request);
@@ -20,12 +21,15 @@ export async function fromWebhook(request: IncomingMessage, response: ServerResp
     console.log('Invalid signature: ' + request.headers['x-hub-signature']);
     response.writeHead(404);
     response.end();
-    return;
+    return false;
   }
 
   response.writeHead(202);
   response.end();
-  processWebhookEvent(JSON.parse(body));
+
+  await processWebhookEvent(JSON.parse(body));
+
+  return true;
 }
 
 async function processWebhookEvent(event: any) {
@@ -35,7 +39,7 @@ async function processWebhookEvent(event: any) {
 
   const issue = readIssueDetails(event);
 
-  if (issue.state === 'closed' || event.action === 'closed') {
+  if (issue.issue.state === 'closed' || event.action === 'closed') {
     removeHistory(issue.repository.fullName, issue.issue.number);
     return;
   }

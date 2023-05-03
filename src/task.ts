@@ -61,7 +61,7 @@ export async function standaloneTask(request, response) {
   await tryTask(task, uid);
 }
 
-async function tryTask(task: string, uid = randomUUID()) {
+export async function tryTask(task: string, uid = randomUUID()) {
   try {
     await runTask(uid, task);
   } catch (error) {
