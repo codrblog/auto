@@ -105,25 +105,39 @@ async function processWebhookEvent(event: any) {
   }
 
   if (!issue.comment || issue.comment.body === 'retry') {
-    return await runIssue(issue);
+    const task = `Next task comes from ${issue.repository.url}.
+    The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}
+    If a task requires reading the content of files, generate only commands to read them and nothing else.
+    If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
+    If you are done, commit all changes and push.
+    
+    # ${issue.issue.title}
+    ${issue.issue.text}
+    `;
+    return await runTask(task);
   }
 
   if (issue.comment.body === 'push') {
     return await pushAllChanges(issue.repository.fullName);
   }
+
+  const taskFromComments = `
+  Context: we are completing a task from ${issue.repository.url}.
+  The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}.
+  If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
+  When you are done, commit all changes and push.
+  
+  Description:
+  # ${issue.issue.title}
+  ${issue.issue.text}
+
+  Next task:
+  ${issue.comment.body}
+  `;
+  return await runTask(taskFromComments);
 }
 
-async function runIssue(issue: Issue) {
-  const task = `Next task comes from ${issue.repository.url}.
-The repository is already cloned at ${process.cwd()}/${issue.repository.fullName}
-If a task requires reading the content of files, generate only commands to read them and nothing else.
-If task is completed, post a message on issue number #${issue.issue.number} at ${issue.issue.url}.
-If you are done, commit all changes and push.
-
-# ${issue.issue.title}
-${issue.issue.text}
-`;
-
+async function runTask(task: string) {
   const uid = randomUUID();
   await tryTask(uid, task);
 }
