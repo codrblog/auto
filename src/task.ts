@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
-import { createSession, findCodeBlocks, getResponse, readBody } from './utils.js';
+import { findCodeBlocks, readBody } from './utils.js';
 import logger from './file-logger.js';
 import { runCommands } from './shell.js';
 import { completeStream, sendEvent } from './streams.js';
+import { eventBus } from './events.js';
 
 interface Task {
   files: string[];
@@ -129,3 +130,7 @@ async function runTask(uid: string, task: string) {
   return sessionJson;
 }
 
+eventBus.on('execute', async ({ uid, task }) => {
+  const completion = await tryTask(task, uid);
+  eventBus.emit('executed', { uid, completion });
+});

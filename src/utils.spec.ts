@@ -1,24 +1,21 @@
-const openAiMock = jest.fn();
-const createChatCompletion = jest.fn();
-
-class OpenAiMock {
-  createChatCompletion = createChatCompletion;
-}
-
-openAiMock.mockImplementation(() => ({
-  Configuration: class {},
-  OpenAIApi: OpenAiMock,
-}));
-
-jest.mock('openai', () => openAiMock());
-
 import { readFileSync } from 'fs';
+import { findCodeBlocks, readBody } from './utils.js';
 import { EventEmitter } from 'events';
-import { createSession, updatePrimer, findCodeBlocks, getResponse, readBody } from './utils.js';
 
 const responseText = readFileSync('./src/__tests__/response-sh.txt', 'utf8');
 
 process.env.APP_LOGS = process.cwd() + '/log.txt';
+
+describe('readBody', () => {
+  it('should read data from a stream as a promise', async () => {
+    const request = new EventEmitter();
+    const output = readBody(request as any);
+    request.emit('data', Buffer.from('test me up'));
+    request.emit('end', '');
+
+    await expect(output).resolves.toBe('test me up');
+  });
+});
 
 describe('commands', () => {
   it('should ignore text without blocks', () => {
@@ -46,59 +43,3 @@ describe('commands', () => {
     expect(output).toEqual(commands);
   });
 });
-
-describe('createSession', () => {
-  it('should prepare for next task', () => {
-    const primer = 'hello world';
-
-    updatePrimer(primer);
-    const session = createSession('input');
-
-    expect(session).toEqual({
-      messages: [
-        { role: 'system', content: primer },
-        { role: 'assistant', content: "Yes, I'm ready! What's the task?" },
-        { role: 'user', content: 'input' },
-      ],
-    });
-  });
-
-  describe('readBody', () => {
-    it('should read data from a stream as a promise', async () => {
-      const request = new EventEmitter();
-      const output = readBody(request as any);
-      request.emit('data', Buffer.from('test me up'));
-      request.emit('end', '');
-
-      await expect(output).resolves.toBe('test me up');
-    });
-  });
-});
-
-describe('fetch a completion', () => {
-  it('should call the API for a completion', async () => {
-    process.env.API_MODEL = 'model';
-    process.env.API_KEY = 'apiKey';
-
-    const completion = { message: { role: 'assistant', content: 'ai response' } };
-    const response = { data: { choices: [completion] } };
-
-    createChatCompletion.mockImplementation(() => response);
-
-    const input = 'test';
-    const session = createSession(input);
-    const output = await getResponse(session.messages);
-
-    expect(createChatCompletion).toHaveBeenCalledWith({
-      model: 'model',
-      messages: [
-        { role: 'system', content: expect.any(String) },
-        { role: 'assistant', content: "Yes, I'm ready! What's the task?" },
-        { role: 'user', content: input },
-      ],
-    });
-
-    expect(output).toBe('ai response');
-  });
-});
-

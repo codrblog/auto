@@ -13,9 +13,8 @@ import { tryTask } from './task.js';
 export async function fromWebhook(request: IncomingMessage, response: ServerResponse) {
   const body = await readBody(request);
 
-  if (process.env.DEBUG) {
-    console.log(body);
-  }
+  /* istanbul ignore next */
+  process.env.DEBUG && console.log(body);
 
   if (!isRequestSignatureValid(String(request.headers['x-hub-signature']), body)) {
     console.log('Invalid signature: ' + request.headers['x-hub-signature']);
@@ -32,21 +31,21 @@ export async function fromWebhook(request: IncomingMessage, response: ServerResp
   return true;
 }
 
-async function processWebhookEvent(event: any) {
+export async function processWebhookEvent(event: any) {
   if (!isIssueActionable(event)) {
-    return;
+    return false;
   }
 
   const issue = readIssueDetails(event);
 
   if (issue.issue.state === 'closed' || event.action === 'closed') {
     removeHistory(issue.repository.fullName, issue.issue.number);
-    return;
+    return false;
   }
 
   const repository = await prepareRepository(issue.repository.fullName, issue.repository.cloneUrl);
   if (repository === false) {
-    return;
+    return false;
   }
 
   if (!issue.comment || issue.comment.body === 'retry') {
@@ -61,11 +60,13 @@ async function processWebhookEvent(event: any) {
     # ${issue.issue.title}
     ${issue.issue.text}
     `;
-    return await tryTask(task);
+    await tryTask(task);
+    return true;
   }
 
   if (issue.comment.body === 'push') {
-    return await pushAllChanges(issue.repository.fullName);
+    await pushAllChanges(issue.repository.fullName);
+    return true;
   }
 
   const taskFromComments = `
@@ -81,5 +82,6 @@ async function processWebhookEvent(event: any) {
   Next task:
   ${issue.comment.body}
   `;
-  return await tryTask(taskFromComments);
+  await tryTask(taskFromComments);
+  return true;
 }

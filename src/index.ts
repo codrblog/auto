@@ -2,7 +2,9 @@ import { IncomingMessage, createServer, ServerResponse } from 'http';
 import { addStream } from './streams.js';
 import { fromWebhook } from './webhook.js';
 import { standaloneTask } from './task.js';
-import { readBody, updatePrimer } from './utils.js';
+import { readBody } from './utils.js';
+import { eventBus } from './events.js';
+import { getResponse, updatePrimer } from './open-ai.js';
 
 export async function onRequest(request: IncomingMessage, response: ServerResponse) {
   if (request.url === '/favicon.ico') {
@@ -51,4 +53,11 @@ if (process.env.PORT) {
     process.chdir(process.env.APP_WORKDIR);
     console.log('Started at %s and %d', process.env.APP_WORKDIR, process.env.PORT);
   });
+
+  eventBus.on('complete', async (event) => {
+    const { uid, messages } = event;
+    const completion = await getResponse(uid, messages);
+    eventBus.emit('completed', { uid, completion });
+  });
+
 }
