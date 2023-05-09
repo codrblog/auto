@@ -2,9 +2,8 @@ import { IncomingMessage, createServer, ServerResponse } from 'http';
 import { addStream } from './streams.js';
 import { fromWebhook } from './webhook.js';
 import { standaloneTask } from './task.js';
-import { readBody } from './utils.js';
 import { eventBus } from './events.js';
-import { getResponse, updatePrimer } from './open-ai.js';
+import { getResponse } from './open-ai.js';
 
 export async function onRequest(request: IncomingMessage, response: ServerResponse) {
   if (request.url === '/favicon.ico') {
@@ -17,21 +16,18 @@ export async function onRequest(request: IncomingMessage, response: ServerRespon
   if (incoming.pathname === '/events' && request.method === 'GET') {
     const uid = incoming.searchParams.get('uid');
 
+    // TODO protect endpoint against attacks
     if (uid) {
-      return addStream(uid, response);
+      addStream(uid, response);
     }
+
+    return;
   }
 
   if (request.method !== 'POST') {
     console.log('Invalid request', String(incoming));
     response.writeHead(404);
     response.end();
-    return;
-  }
-
-  if (incoming.pathname === '/primer') {
-    updatePrimer(await readBody(request));
-    response.writeHead(204);
     return;
   }
 

@@ -4,7 +4,7 @@ import { addStream, completeStream, sendEvent } from './streams';
 describe('server sent event stream', () => {
   it('should send an event to a stream', () => {
     const stream = new ServerResponse(new IncomingMessage(null));
-
+    createStream('123');
     addStream('123', stream);
     expect(stream.getHeader('Content-Type')).toBe('text/event-stream');
     expect(stream.getHeader('Cache-Control')).toBe('no-cache');

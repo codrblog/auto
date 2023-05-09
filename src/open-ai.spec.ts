@@ -12,18 +12,15 @@ openAiMock.mockImplementation(() => ({
 
 jest.mock('openai', () => openAiMock());
 
-import { getResponse, createSession, updatePrimer } from './open-ai.js';
+import { getResponse, createSession } from './open-ai.js';
 
 describe('createSession', () => {
   it('should prepare for next task', () => {
-    const primer = 'hello world';
-
-    updatePrimer(primer);
     const session = createSession('input');
 
     expect(session).toEqual({
       messages: [
-        { role: 'system', content: primer },
+        { role: 'system', content: expect.any(String) },
         { role: 'assistant', content: "Yes, I'm ready! What's the task?" },
         { role: 'user', content: 'input' },
       ],

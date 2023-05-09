@@ -6,10 +6,6 @@ const preamble = {
   text: readFileSync('./primer.txt', 'utf-8'),
 };
 
-export function updatePrimer(input: string) {
-  preamble.text = input;
-}
-
 export async function getResponse(uid: string, messages: ChatCompletionRequestMessage[]) {
   console.info('Completions for:\n %s', messages[messages.length - 1].content);
 
