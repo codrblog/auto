@@ -1,11 +1,17 @@
-import { readFileSync } from 'fs';
 import { IncomingMessage } from 'http';
 import { ChatCompletionRequestMessage } from 'openai';
 import { ExecOutput, execString } from '@cloud-cli/exec';
 import ai from 'openai';
 
 const preamble = {
-  text: readFileSync('./primer.txt', 'utf-8'),
+  text: `
+You are a fully autonomous AI. The host system where you are running is a Linux environment.
+There's a variable called GITHUB_TOKEN, which is already set in the environment, for GitHub API access.
+
+If a task requires reading the content of files, generate a commands to read the content and wait for a response from the host system.
+If you make changes to a repository, also generate commands to commit your changes and push it.
+
+`.trim()
 };
 
 export function findCodeBlocks(text: string) {
@@ -44,7 +50,6 @@ export function updatePrimer(input: string) {
 export function createSession(input: string) {
   const messages: ChatCompletionRequestMessage[] = [
     { role: 'system', content: preamble.text },
-    { role: 'assistant', content: "Yes, I'm ready! What's the task?" },
     { role: 'user', content: input },
   ];
 

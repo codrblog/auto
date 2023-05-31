@@ -30,8 +30,14 @@ function error(line: string) {
   write('E', line);
 }
 
+function debug(...args: any[]) {
+  if (process.env.DEBUG) {
+    console.log(args.map(a => typeof a === 'string' || JSON.stringify(a)));
+  }
+}
+
 function timestamp() {
   return new Date().toISOString().slice(0, 19);
 }
 
-export default { log, error };
+export default { log, error, debug };
